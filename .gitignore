@@ -2,7 +2,11 @@
 __pycache__/
 *.py[cod]
 *$py.class
+
+# self defined
 .idea
+data/db.sqlite3
+
 # C extensions
 *.so
 
