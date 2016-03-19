@@ -6,6 +6,7 @@ __pycache__/
 # self defined
 .idea
 data/db.sqlite3
+/data/pages
 .DS_Store
 # C extensions
 *.so
