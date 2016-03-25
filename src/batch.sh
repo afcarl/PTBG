@@ -6,3 +6,11 @@ nohup python PageCrawler.py 4 > ../data/log/4.log &
 nohup python PageCrawler.py 5 > ../data/log/5.log &
 nohup python PageCrawler.py 6 > ../data/log/6.log &
 nohup python PageCrawler.py 7 > ../data/log/7.log &
+nohup python PageCrawler.py 8 > ../data/log/8.log &
+nohup python PageCrawler.py 9 > ../data/log/9.log &
+nohup python PageCrawler.py 10 > ../data/log/10.log &
+nohup python PageCrawler.py 11 > ../data/log/11.log &
+nohup python PageCrawler.py 12 > ../data/log/12.log &
+nohup python PageCrawler.py 13 > ../data/log/13.log &
+nohup python PageCrawler.py 14 > ../data/log/14.log &
+nohup python PageCrawler.py 15 > ../data/log/15.log &

@@ -4,6 +4,8 @@ import sys
 reload(sys)
 sys.setdefaultencoding( "utf-8" )
 
+
+
 def extractUrls():
     import sqlite3
     db = sqlite3.connect('../data/db.sqlite3')
