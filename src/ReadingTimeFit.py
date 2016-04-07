@@ -6,6 +6,8 @@ import numpy as np
 def linearfit(x, y):
     z1 = np.polyfit(x,y,1,full=True)
     return z1[0],z1[1]
+
+
 #
 #
 # X=[ 1 ,2  ,3 ,4 ,5 ,6]

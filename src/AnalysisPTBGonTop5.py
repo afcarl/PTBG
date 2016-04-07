@@ -8,10 +8,15 @@ from ReadingTimeFit import linearfit
 import os
 import math
 import sys
+from scipy.stats import linregress
+
+from scipy import stats
+import numpy as np
+
+
 reload(sys)
 sys.setdefaultencoding('utf8')
 def calculateUserReading():
-
     # userRel: (user,doc) -> rel
     userRel = defaultdict(lambda:-1)
 
@@ -48,6 +53,7 @@ def calculateUserReading():
     userReadBehvOnDoc = defaultdict(lambda:[[],[],[]])
 
     for s in sessions:
+
         for i in s.interactions:
             for c in i.clicks:
                 duration = c.endtime - c.starttime
@@ -59,15 +65,29 @@ def calculateUserReading():
                 dlength = doclength[docid]
                 dheight = imagelength[docid]
 
-                if dlength >0 and dheight >0:
+                if dlength >100 and dheight >700 and duration > 10 and dlength < 30000:
                     userReadBehvOnDoc[user][0].append(duration)
                     userReadBehvOnDoc[user][1].append(dlength)
                     userReadBehvOnDoc[user][2].append(dheight)
 
-    fout = open('../data/readingBehaviorFit34.csv','w')
-    fout.write('user,#samples,dlength-slope,dlength-intercept,dlength-r,length.mean,length.std,dheight-slope,dheight-intercept,dheight-r,height.mean,height.std\n')
 
-    check = open('../data/userbehavior.csv','w')
+    fout = open('../data/readingBehaviorFit34-new.csv','w')
+
+    fout.write('user,#samples,slope,intercept,r-value,p-value,stderr,slope,intercept,r-value,p-value,stderr\n')
+
+    # raw
+    raw = open('../data/raw-user-reading.csv','w')
+    raw.write('user,dwelltime,dlength,dheight\n')
+
+    for u in userReadBehvOnDoc:
+        for i in range(0,len(userReadBehvOnDoc[u][0]),1):
+            raw.write(','.join([str(item) for item in [u,userReadBehvOnDoc[u][0][i],
+                                                        userReadBehvOnDoc[u][1][i],
+                                                        userReadBehvOnDoc[u][2][i]]]))
+            raw.write('\n')
+    raw.close()
+
+    check = open('../data/userbehavior-fine-grained.csv','w')
 
     for u in userReadBehvOnDoc:
         check.write(str(u)+'\n')
@@ -75,13 +95,13 @@ def calculateUserReading():
         check.write(','.join([str(item) for item in userReadBehvOnDoc[u][1] ])+'\n')
         check.write(','.join([str(item) for item in userReadBehvOnDoc[u][2] ])+'\n')
         fout.write(str(u)+','+str(len(userReadBehvOnDoc[u][0]))+',')
-        linepara1, r1 = linearfit(userReadBehvOnDoc[u][1],userReadBehvOnDoc[u][0])
-        linepara2, r2 = linearfit(userReadBehvOnDoc[u][2],userReadBehvOnDoc[u][0])
+        slope1, intercept1, r1, p1, stderr1 = linregress(userReadBehvOnDoc[u][1],userReadBehvOnDoc[u][0])
+        slope2, intercept2, r2, p2, stderr2 = linregress(userReadBehvOnDoc[u][2],userReadBehvOnDoc[u][0])
         import numpy as np
         length = np.array(userReadBehvOnDoc[u][1])
         height = np.array(userReadBehvOnDoc[u][2])
 
-        fout.write(','.join([str(item) for item in [linepara1[0],linepara1[1],r1[0],length.mean(),length.std(),linepara2[0],linepara2[1],r2[0],height.mean(),height.std()]]))
+        fout.write(','.join([str(item) for item in [slope1, intercept1,r1,p1,stderr1,slope2,intercept2,r2,p2,stderr2]]))
         fout.write('\n')
 
     overall = [[],[],[]]
@@ -90,13 +110,27 @@ def calculateUserReading():
             overall[0].append(userReadBehvOnDoc[u][0][i])
             overall[1].append(userReadBehvOnDoc[u][1][i])
             overall[2].append(userReadBehvOnDoc[u][2][i])
-    linepara1, r1 = linearfit(overall[1],overall[0])
-    linepara2, r2 = linearfit(overall[2],overall[0])
-    fout.write(','.join([str(item) for item in ['overall', '#',linepara1[0],linepara1[1],r1[0],'#','#',linepara2[0],linepara2[1],r2[0]]]))
 
+    slope1, intercept1, r1, p1, stderr1 = linregress(overall[1],overall[0])
+
+    slope2, intercept2, r2, p2, stderr2 = linregress(overall[2],overall[0])
+
+    import matplotlib.pylab as plt
+
+    fig, ax = plt.subplots()
+    ax.plot(overall[1],overall[0],'+')
+    ax.set_title('x = docment length; y = reading time')
+    plt.savefig('../data/figs/doclength.eps')
+
+    fig, ax = plt.subplots()
+    ax.plot(overall[2],overall[0],'o')
+    ax.set_title('x = webpage length; y = reading time')
+    plt.savefig('../data/figs/webpagelength.eps')
+
+    fout.write(','.join([str(item) for item in ['overall', '#',slope1,intercept1,r1,p1,stderr1,slope2,intercept2,r2,p2,stderr2]]))
     fout.close()
 
-def TBG():
+def TBG(rate):
     objectRel = defaultdict(lambda:-1)
 
     doclength = defaultdict(lambda:-1)
@@ -139,14 +173,14 @@ def TBG():
                         if dlength == -1:
                             valid = False
                         else:
-                            simutime = 0.00103367*dlength+42.95761547
+                            simutime = 0.001475719*dlength+52.21503105
                             if rel>=3:
                                 p_click = 0.64
                             else:
                                 p_click = 0.39
                             tbgcumtime+=simutime*p_click
                             if rel<3:
-                                ptbgcumtime+=simutime*0.8*p_click
+                                ptbgcumtime+=simutime*rate*p_click
                             else:
                                 ptbgcumtime+=simutime*p_click
                 if valid==True:
@@ -174,7 +208,7 @@ def TBG():
                     user2sat[u].append(sat)
                     user2queries[u].add(q)
     import scipy.stats as stats
-    fout = open('../data/tbg_ptbg_kendall_tau.csv','w')
+    fout = open('../data/rate/'+str(rate)+'tbg_ptbg_kendall_tau.csv','w')
     fout.write('user, # samples ,tbg v.s. sat(raw), p-value, ptbg v.s. sat(raw),p-value\n')
     for u in user2tbg:
         k1,p1 = stats.kendalltau(user2sat[u],user2tbg[u])
@@ -182,7 +216,7 @@ def TBG():
         fout.write(','.join([str(item) for item in [u,len(user2sat[u]),k1,p1,k2,p2]])+'\n')
     fout.close()
 
-    fout = open('../data/tbg_ptbg_pearsonr.csv','w')
+    fout = open('../data/rate/'+str(rate)+'tbg_ptbg_pearsonr.csv','w')
     fout.write('user, # samples ,tbg v.s. sat(raw), p-value, ptbg v.s. sat(raw),p-value\n')
     for u in user2tbg:
         k1,p1 = stats.pearsonr(user2sat[u],user2tbg[u])
@@ -191,6 +225,37 @@ def TBG():
     fout.close()
 
 
+def analysisDocDistribution():
+
+    doclength = []
+    imagelength = []
+
+    for f in os.listdir('../data/pages-content'):
+        doclength.append(len(open('../data/pages-content/'+f).read()))
+    for f in os.listdir('../data/screenshots'):
+        from PIL import Image
+        im = Image.open('../data/screenshots/'+f)
+        width, height = im.size
+        imagelength.append(height)
+
+    doclength.sort()
+
+    imagelength.sort()
+
+    fout =  open('../data/doclengthdistribution.csv','w')
+    for i in range(0, min(len(doclength),len(imagelength)),1):
+        fout.write(str(i)+','+ str(doclength[i])+','+str(imagelength[i])+'\n')
+    fout.close()
+
+
+
 
 if __name__=="__main__":
-    TBG()
+    # analysisDocDistribution()
+    # TBG(0.9)
+    # TBG(0.8)
+    # TBG(0.7)
+    # TBG(0.6)
+    # TBG(0.5)
+
+    calculateUserReading()
